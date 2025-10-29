@@ -3,9 +3,8 @@
 
 version: 2
 
-# Since this is a library, not a binary, we skip building binaries
-builds:
-  - skip: true
+# Since this is a library, not a binary, we explicitly set an empty builds array
+builds: []
 
 before:
   hooks:
