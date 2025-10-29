@@ -1,9 +1,11 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
 
-version: 1
+version: 2
 
-builds: []
+# Since this is a library, not a binary, we skip building binaries
+builds:
+  - skip: true
 
 before:
   hooks:
