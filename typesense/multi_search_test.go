@@ -206,6 +206,200 @@ func TestMultiSearchResultDeserialization(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
+func TestMultiSearchResultDeserializationWithTopLevelFields(t *testing.T) {
+	inputJSON := `{
+		"found": 3,
+		"out_of": 10,
+		"search_time_ms": 5,
+		"page": 1,
+		"search_cutoff": false,
+		"hits": [
+			{
+				"highlights": [
+					{
+						"field": "company_name",
+						"snippet": "<mark>Stark</mark> Industries",
+						"matched_tokens": ["Stark"]
+					}
+				],
+				"document": {
+					"id": "124",
+					"company_name": "Stark Industries",
+					"num_employees": 5215,
+					"country": "USA"
+				}
+			},
+			{
+				"document": {
+					"id": "125",
+					"company_name": "Company 2",
+					"num_employees": 150,
+					"country": "USA"
+				}
+			},
+			{
+				"document": {
+					"id": "127",
+					"company_name": "Company 3",
+					"num_employees": 250,
+					"country": "USA"
+				}
+			}
+		],
+		"results": [
+			{
+				"facet_counts": [],
+				"found": 2,
+				"search_time_ms": 2,
+				"hits": [
+					{
+						"highlights": [
+							{
+								"field": "company_name",
+								"snippet": "<mark>Stark</mark> Industries",
+								"matched_tokens": ["Stark"]
+							}
+						],
+						"document": {
+							"id": "124",
+							"company_name": "Stark Industries",
+							"num_employees": 5215,
+							"country": "USA"
+						}
+					},
+					{
+						"document": {
+							"id": "125",
+							"company_name": "Company 2",
+							"num_employees": 150,
+							"country": "USA"
+						}
+					}
+				]
+			},
+			{
+				"facet_counts": [],
+				"found": 1,
+				"search_time_ms": 1,
+				"hits": [
+					{
+						"document": {
+							"id": "127",
+							"company_name": "Company 3",
+							"num_employees": 250,
+							"country": "USA"
+						}
+					}
+				]
+			}
+		]
+	}`
+	expected := &api.MultiSearchResult{
+		Found:        pointer.Int(3),
+		OutOf:        pointer.Int(10),
+		SearchTimeMs: pointer.Int(5),
+		Page:         pointer.Int(1),
+		SearchCutoff: pointer.False(),
+		Hits: &[]api.SearchResultHit{
+			{
+				Highlights: &[]api.SearchHighlight{
+					{
+						Field:         pointer.String("company_name"),
+						Snippet:       pointer.String("<mark>Stark</mark> Industries"),
+						MatchedTokens: &[]interface{}{"Stark"},
+					},
+				},
+				Document: &map[string]interface{}{
+					"id":            "124",
+					"company_name":  "Stark Industries",
+					"num_employees": float64(5215),
+					"country":       "USA",
+				},
+			},
+			{
+				Document: &map[string]interface{}{
+					"id":            "125",
+					"company_name":  "Company 2",
+					"num_employees": float64(150),
+					"country":       "USA",
+				},
+			},
+			{
+				Document: &map[string]interface{}{
+					"id":            "127",
+					"company_name":  "Company 3",
+					"num_employees": float64(250),
+					"country":       "USA",
+				},
+			},
+		},
+		Results: []api.MultiSearchResultItem{
+			{
+				Found:        pointer.Int(2),
+				SearchTimeMs: pointer.Int(2),
+				FacetCounts:  &[]api.FacetCounts{},
+				Hits: &[]api.SearchResultHit{
+					{
+						Highlights: &[]api.SearchHighlight{
+							{
+								Field:         pointer.String("company_name"),
+								Snippet:       pointer.String("<mark>Stark</mark> Industries"),
+								MatchedTokens: &[]interface{}{"Stark"},
+							},
+						},
+						Document: &map[string]interface{}{
+							"id":            "124",
+							"company_name":  "Stark Industries",
+							"num_employees": float64(5215),
+							"country":       "USA",
+						},
+					},
+					{
+						Document: &map[string]interface{}{
+							"id":            "125",
+							"company_name":  "Company 2",
+							"num_employees": float64(150),
+							"country":       "USA",
+						},
+					},
+				},
+			},
+			{
+				Found:        pointer.Int(1),
+				SearchTimeMs: pointer.Int(1),
+				FacetCounts:  &[]api.FacetCounts{},
+				Hits: &[]api.SearchResultHit{
+					{
+						Document: &map[string]interface{}{
+							"id":            "127",
+							"company_name":  "Company 3",
+							"num_employees": float64(250),
+							"country":       "USA",
+						},
+					},
+				},
+			},
+		},
+	}
+	result := &api.MultiSearchResult{}
+	err := json.Unmarshal([]byte(inputJSON), result)
+	assert.Nil(t, err)
+	assert.Equal(t, expected, result)
+
+	assert.NotNil(t, result.Found)
+	assert.Equal(t, 3, *result.Found)
+	assert.NotNil(t, result.OutOf)
+	assert.Equal(t, 10, *result.OutOf)
+	assert.NotNil(t, result.SearchTimeMs)
+	assert.Equal(t, 5, *result.SearchTimeMs)
+	assert.NotNil(t, result.Page)
+	assert.Equal(t, 1, *result.Page)
+	assert.NotNil(t, result.SearchCutoff)
+	assert.Equal(t, false, *result.SearchCutoff)
+	assert.NotNil(t, result.Hits)
+	assert.Equal(t, 3, len(*result.Hits))
+}
+
 func TestMultiSearch(t *testing.T) {
 	expectedParams := newMultiSearchParams()
 	expectedResult := newMultiSearchResult()

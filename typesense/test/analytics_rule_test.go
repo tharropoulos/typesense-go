@@ -37,7 +37,7 @@ func TestAnalyticsRule(t *testing.T) {
 		ruleName := newUUIDName("test-rule")
 		ruleCreate := &api.AnalyticsRuleCreate{
 			Name:       ruleName,
-			Type:       api.AnalyticsRuleCreateTypeCounter,
+			Type:       api.Counter,
 			Collection: collectionName,
 			EventType:  "click",
 			Params: &api.AnalyticsRuleCreateParams{
@@ -52,7 +52,7 @@ func TestAnalyticsRule(t *testing.T) {
 		
 		createdRule := result[0]
 		require.Equal(t, ruleName, createdRule.Name)
-		require.Equal(t, api.AnalyticsRuleTypeCounter, createdRule.Type)
+		require.Equal(t, api.Counter, createdRule.Type)
 		require.Equal(t, collectionName, createdRule.Collection)
 		require.Equal(t, "click", createdRule.EventType)
 	})

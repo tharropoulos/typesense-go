@@ -346,3 +346,82 @@ func TestMultiSearchWithStopwords(t *testing.T) {
 	// Check second result
 	require.Equal(t, 0, len(*result.Results[1].Hits), "Number of docs in second result did not equal")
 }
+
+func TestMultiSearchUnionWithTopLevelFields(t *testing.T) {
+	collectionName1 := createNewCollection(t, "companies")
+	collectionName2 := createNewCollection(t, "companies")
+	documents := []interface{}{
+		newDocument("123", withCompanyName("Company 1"), withNumEmployees(50)),
+		newDocument("125", withCompanyName("Company 2"), withNumEmployees(150)),
+		newDocument("127", withCompanyName("Company 3"), withNumEmployees(250)),
+		newDocument("129", withCompanyName("Stark Industries 4"), withNumEmployees(500)),
+		newDocument("131", withCompanyName("Stark Industries 5"), withNumEmployees(1000)),
+	}
+
+	params := &api.ImportDocumentsParams{Action: pointer.Any(api.Create)}
+	_, err := typesenseClient.Collection(collectionName1).Documents().Import(context.Background(), documents, params)
+	require.NoError(t, err)
+
+	_, err = typesenseClient.Collection(collectionName2).Documents().Import(context.Background(), documents, params)
+	require.NoError(t, err)
+
+	searchParams := &api.MultiSearchParams{
+		FilterBy: pointer.String("num_employees:>100"),
+		QueryBy:  pointer.String("company_name"),
+	}
+
+	searches := api.MultiSearchSearchesParameter{
+		Union: pointer.True(),
+		Searches: []api.MultiSearchCollectionParameters{
+			{
+				Q:          pointer.String("Company"),
+				Collection: pointer.Any(collectionName1),
+				FilterBy:   pointer.String("num_employees:>100"),
+				SortBy:    pointer.String("num_employees:desc"),
+			},
+			{
+				Q:          pointer.String("Stark"),
+				Collection: pointer.Any(collectionName2),
+				FilterBy:   pointer.String("num_employees:>=500"),
+			},
+		},
+	}
+
+	result, err := typesenseClient.MultiSearch.Perform(context.Background(), searchParams, searches)
+	require.NoError(t, err)
+
+	_ = result.Found
+	_ = result.OutOf
+	_ = result.SearchTimeMs
+	_ = result.Hits
+	_ = result.UnionRequestParams
+	_ = result.Page
+	_ = result.SearchCutoff
+	_ = result.FacetCounts
+	_ = result.Metadata
+	_ = result.RequestParams
+
+	if result.Found != nil {
+		require.Greater(t, *result.Found, 0, "Found should be greater than 0 if populated")
+	}
+
+	if result.OutOf != nil {
+		require.Greater(t, *result.OutOf, 0, "OutOf should be greater than 0 if populated")
+	}
+
+	if result.SearchTimeMs != nil {
+		require.GreaterOrEqual(t, *result.SearchTimeMs, 0, "SearchTimeMs should be >= 0 if populated")
+	}
+
+	if result.Hits != nil {
+		require.Greater(t, len(*result.Hits), 0, "Hits should contain results if populated")
+		if result.Found != nil {
+			require.Equal(t, *result.Found, len(*result.Hits), "Found count should match number of hits if both are populated")
+		}
+	}
+
+	if result.UnionRequestParams != nil {
+		require.Greater(t, len(*result.UnionRequestParams), 0, "UnionRequestParams should contain request params if populated")
+	}
+	_ = result.Results
+}
